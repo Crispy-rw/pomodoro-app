@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen'
 import { TextInput } from 'react-native-paper';
 import { useDispatch, useSelector } from "react-redux";
+import { Picker } from '@react-native-picker/picker';
 
 import {
     setAlarmRepeat,
@@ -24,21 +25,38 @@ import {
     SLOW_TICKING,
 } from "../utils/constants";
 
+const alarmSounds = [
+    {
+        value: BELL_SOUND,
+        label: "Bell",
+    },
+    {
+        value: DIGITAL_SOUND,
+        label: "Digital",
+    },
+];
+
+const tickingSounds = [
+    {
+        value: NO_SOUND,
+        label: "None",
+    },
+    {
+        value: FAST_TICKING,
+        label: "Ticking Fast",
+    },
+    {
+        value: SLOW_TICKING,
+        label: "Ticking Slow",
+    },
+];
+
 
 
 function SettingsScreen(props) {
-    const [text, setText] = React.useState('');
 
     const {
         modes,
-        autoBreaks,
-        autoPomodoros,
-        longBreakInterval,
-        alarmSound,
-        alarmVolume,
-        alarmRepeat,
-        tickingSound,
-        tickingVolume,
     } = useSelector((state) => state.timer);
     const dispatch = useDispatch();
 
@@ -61,7 +79,6 @@ function SettingsScreen(props) {
 
                 />
             ))}
-
         </View>
     );
 }

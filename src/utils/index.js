@@ -2,34 +2,37 @@ import Sound from 'react-native-sound'
 
 export function player({ asset, volume = 0.5, loop = false }) {
 
-    let audio = new Sound(asset);
-    audio.setVolume(volume);
+    let audio;
+    if (asset) {
+        audio = new Sound(asset, Sound.MAIN_BUNDLE);
+        audio?.setVolume(volume);
+    }
 
-    if (loop) {
-        audio.addEventListener(
-            "ended",
-            () => {
-                audio.setCurrentTime(0)
-                audio.play();
-            },
-            false
-        );
+    if (loop && audio) {
+        audio?.setNumberOfLoops(-1)
     }
 
     const play = () => {
-        if (!audio.isPlaying || !audio.getCurrentTime()) {
-            audio.play().catch(() => { });
+        let currentTime;
+
+        audio?.getCurrentTime((sec, play) => {
+            currentTime = sec ?? 0;
+        })
+        if (!audio?.isPlaying() || !currentTime) {
+            audio?.play()
         }
     };
 
     const stop = () => {
-        audio.pause();
+        audio?.pause();
     };
 
-    const setVolume = (value) => (audio.setVolume(value / 100));
+    const setVolume = (value) => (audio?.setVolume(value / 100));
 
     const setAudio = (src) => {
-        audio = Sound(src);
+        audio = new Sound(src, Sound.MAIN_BUNDLE)
+        audio?.setVolume(0.5)
+        audio?.play()
     };
 
     return {

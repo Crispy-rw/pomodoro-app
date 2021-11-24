@@ -6,11 +6,14 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
+    "preandroid": "cd android && ./gradlew clean && cd ..",
     "test": "jest",
     "lint": "eslint ."
   },
   "dependencies": {
     "@eva-design/eva": "^2.1.1",
+    "@miblanchard/react-native-slider": "^2.0.2",
+    "@react-native-picker/picker": "^2.2.0",
     "@react-navigation/bottom-tabs": "^6.0.9",
     "@react-navigation/native": "^6.0.6",
     "@react-navigation/stack": "^6.0.11",

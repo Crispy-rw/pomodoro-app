@@ -1,7 +1,20 @@
-import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { useDispatch, useSelector } from "react-redux";
-import { incrementRound, setMode } from "../redux/timerSlice";
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    Alert,
+    Pressable,
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+    widthPercentageToDP as wp,
+    heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';;
+
+import { incrementRound, setMode } from '../redux/timerSlice';
+import { formatTime } from '../utils/helpers';
 import {
     CONFIRM,
     LONG_BREAK,
@@ -11,40 +24,97 @@ import {
     STOP,
     TIME_FOR_A_BREAK,
     TIME_TO_FOCUS,
-} from "../utils/constants";
-import useCountdown from "../utils/useCountdown";
-import { player } from "../utils/index";
+} from '../utils/constants';
+import useCountdown from '../utils/useCountdown';
+import { player } from '../utils/index';
 
+const AsyncAlert = async () =>
+    new Promise(resolve => {
+        Alert.alert('Are You Sure', CONFIRM, [
+            {
+                text: 'Cancel',
+                onPress: () => resolve(false),
+                style: 'cancel',
+            },
+            {
+                text: 'ok',
+                onPress: () => {
+                    resolve(true);
+                },
+            },
+        ]);
+    });
 
-const PrimaryButton = ({ active, onClick, color }) => {
+const PrimaryButton = ({ active, onClick, color, mode }) => {
+    const titlebackgroundColor = () => {
+        if (mode == 'pomodoro') {
+            return '#be5551';
+        }
+        else if (mode == 'short_break') {
+            return '#4c8385'
+        }
+        else if (mode == 'long_break') {
+            return '#497697'
+        }
+    }
     return (
-        <TouchableOpacity style={styles.primaryBtn}>
-            {active ? STOP : START}
-        </TouchableOpacity>
-    )
-}
+        <Pressable
+            onPress={onClick}
+            style={{
+                backgroundColor: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: wp(40),
+                height: hp(8),
+                alignSelf: 'center',
+            }}>
+            <Text
+                style={{
+                    fontSize: 20,
+                    fontWeight: '900',
+                    color: titlebackgroundColor(),
+                }}>
+                {active ? STOP : START}
+            </Text>
+        </Pressable>
+    );;
+};
 
-const NextButton = (props) => {
+
+const SecondaryButton = ({ children, active, onClick, mode }) => {
+
+    const titlebackgroundColor = () => {
+        if (mode == 'pomodoro') {
+            return '#be5551';
+        }
+        else if (mode == 'short_break') {
+            return '#4c8385'
+        }
+        else if (mode == 'long_break') {
+            return '#497697'
+        }
+    }
+
     return (
-        <TouchableOpacity></TouchableOpacity>
-    )
-}
-
+        <Text onPress={onClick} style={[styles.tab, active && { backgroundColor: titlebackgroundColor() }]}>
+            {children}
+        </Text>
+    );;
+};;
 
 const buttonSound = player({
-    // asset: "sounds/button-press.wav",
-    // volume: 0.5,
+    asset: require('../assets/button-press.wav'),
+    volume: 0.5,
 });
 
 const tickingAudio = player({
-    // loop: true,
+    loop: true,
 });
 
 const alarmAudio = player({});
 
-
 function HomeScreen(props) {
-
     const dispatch = useDispatch();
     const {
         mode,
@@ -54,64 +124,57 @@ function HomeScreen(props) {
         tickingVolume,
         alarmSound,
         alarmVolume,
-    } = useSelector((state) => state.timer);
-
+        autoBreaks,
+    } = useSelector(state => state.timer);
 
     const { ticking, start, stop, reset, timeLeft, progress } = useCountdown({
         minutes: modes[mode].time,
         onStart: () => {
-            updateFavicon(mode);
             if (mode === POMODORO) {
-                // tickingAudio.play();
+                tickingAudio.play();
             }
         },
         onStop: () => {
-            updateFavicon();
             if (mode === POMODORO) {
-                // tickingAudio.stop();
+                tickingAudio.stop();
             }
         },
         onComplete: () => {
             next();
             if (mode === POMODORO) {
-                // tickingAudio.stop();
+                tickingAudio.stop();
             }
-            // alarmAudio.play();
+            alarmAudio.play();
         },
     });
 
-    useEffect(() => {
-        updateTitle(timeLeft, mode);
-    }, [mode, timeLeft]);
-
     const jumpTo = useCallback(
-        (id) => {
+        id => {
             reset();
-            updateFavicon(id);
             dispatch(setMode(id));
         },
-        [dispatch, reset]
+        [dispatch, reset],
     );
 
-    // useEffect(() => {
-    //     tickingAudio.stop();
-    //     tickingAudio.setAudio(tickingSound);
-    //     if (ticking && mode === POMODORO) {
-    //         tickingAudio.play();
-    //     }
-    // }, [mode, ticking, tickingSound]);
+    useEffect(() => {
+        tickingAudio.stop();
+        tickingAudio.setAudio(tickingSound);
+        if (ticking && mode === POMODORO) {
+            tickingAudio.play();
+        }
+    }, [mode, ticking, tickingSound]);
 
-    // useEffect(() => {
-    //     alarmAudio.setAudio(alarmSound);
-    // }, [alarmSound]);
+    useEffect(() => {
+        alarmAudio.setAudio(alarmSound);
+    }, [alarmSound]);
 
-    // useEffect(() => {
-    //     tickingAudio.setVolume(tickingVolume);
-    // }, [tickingVolume]);
+    useEffect(() => {
+        tickingAudio.setVolume(tickingVolume);
+    }, [tickingVolume]);
 
-    // useEffect(() => {
-    //     alarmAudio.setVolume(alarmVolume);
-    // }, [alarmVolume]);
+    useEffect(() => {
+        alarmAudio.setVolume(alarmVolume);
+    }, [alarmVolume]);
 
     const next = useCallback(() => {
         switch (mode) {
@@ -127,19 +190,18 @@ function HomeScreen(props) {
     }, [dispatch, jumpTo, mode]);
 
     const confirmAction = useCallback(
-        (cb) => {
+        async cb => {
             let allowed = true;
             if (ticking) {
                 stop();
-                allowed = confirm(CONFIRM);
+                allowed = await AsyncAlert();
                 start();
             }
-
             if (allowed) {
                 cb();
             }
         },
-        [start, stop, ticking]
+        [start, stop, ticking],
     );
 
     const confirmNext = useCallback(() => {
@@ -147,10 +209,10 @@ function HomeScreen(props) {
     }, [confirmAction, next]);
 
     const confirmJump = useCallback(
-        (id) => {
+        id => {
             confirmAction(() => jumpTo(id));
         },
-        [confirmAction, jumpTo]
+        [confirmAction, jumpTo],
     );
 
     const toggleTimer = useCallback(() => {
@@ -162,30 +224,69 @@ function HomeScreen(props) {
         }
     }, [start, stop, ticking]);
 
+    const backgroundColor = () => {
+        if (mode == 'pomodoro') {
+            return '#db524d';
+        }
+        else if (mode == 'short_break') {
+            return '#468e91'
+        }
+        else if (mode == 'long_break') {
+            return '#437ea8'
+        }
+    }
+
+    const containerBackgroundColor = () => {
+        if (mode == 'pomodoro') {
+            return '#df645f';
+        }
+        else if (mode == 'short_break') {
+            return '#599a9c'
+        }
+        else if (mode == 'long_break') {
+            return '#568bb1'
+        }
+    }
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: backgroundColor() }]}>
             <View style={styles.header}>
-                <Text style={styles.headerText}>Pomodoro</Text>
+                <Text style={[styles.headerText]}>Pomodoro</Text>
             </View>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: containerBackgroundColor() }]}>
                 <View style={styles.tabs}>
                     {Object.values(modes).map(({ id, label }) => (
                         <SecondaryButton
+                            mode={mode}
                             key={id}
                             active={id === mode}
                             id={id}
-                            onClick={() => confirmJump(id)}
-                        >
+                            onClick={() => confirmJump(id)}>
                             {label}
                         </SecondaryButton>
                     ))}
-                    <Text style={[styles.tab]}>Pomodoro</Text>
-                    <Text style={styles.tab}>Short Break</Text>
-                    <Text style={styles.tab}>Long Break</Text>
                 </View>
                 <View style={styles.timer}>
-                    <Text style={styles.timerText}>25:00</Text>
+                    <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
                 </View>
+                <PrimaryButton active={ticking} onClick={toggleTimer} mode={mode} />
+                {!ticking && (
+                    <View
+                        style={{
+                            height: hp(1),
+                            width: wp(40),
+                            backgroundColor: '#ebebeb',
+                            alignSelf: 'center',
+                        }}></View>
+                )}
+                <Text
+                    style={{
+                        color: 'white',
+                        paddingTop: hp(2),
+                        alignSelf: 'center',
+                    }}>
+                    {mode === POMODORO ? TIME_TO_FOCUS : TIME_FOR_A_BREAK}
+                </Text>
             </View>
         </View>
     );
@@ -196,25 +297,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#db524d',
         flex: 1,
     },
-    headerText: {},
+    headerText: {
+        textAlign: 'center',
+        fontSize: 30,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginVertical: 20
+    },
     card: {
         height: '40%',
         width: '100%',
         backgroundColor: '#df645f',
-        padding: '3%'
+        padding: '3%',
     },
     tabs: {
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-evenly'
+        justifyContent: 'center',
     },
     tab: {
         paddingHorizontal: '2%',
         paddingVertical: '2%',
-        backgroundColor: '#be5551',
         borderRadius: 5,
-        color: "white",
-        fontWeight: '700'
+        color: 'white',
+        fontWeight: '700',
     },
     timerText: {
         fontSize: 130,
@@ -225,16 +331,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    primaryBtn: {
-        // padding: 0 0.75'rem,
-        fontSize: 1.375,
-        height: 3.4375,
-        fontWeight: 600,
-        width: 12.5,
-        backgroundColor: 'white',
-        textTransform: 'uppercase',
-
-    }
-})
+    activeTab: {
+        backgroundColor: '#be5551',
+    },
+});
 
 export default HomeScreen;
